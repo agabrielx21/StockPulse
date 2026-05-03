@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StockPulse — Contextualizing the Market. Empowering the Investor.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c10;
+      --bg2:       #0d1319;
+      --bg3:       #111820;
+      --surface:   #141d28;
+      --border:    rgba(0,200,120,0.13);
+      --border2:   rgba(255,255,255,0.06);
+      --green:     #00e87a;
+      --green-dim: #00c462;
+      --green-glow: rgba(0,232,122,0.18);
+      --red:       #ff4757;
+      --amber:     #ffb84d;
+      --blue:      #3d9bff;
+      --text:      #e8edf2;
+      --text-mid:  #8fa0b3;
+      --text-dim:  #4d6070;
+      --mono:      'Space Mono', monospace;
+      --display:   'Plus Jakarta Sans', sans-serif;
+      --body:      'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-weight: 300;
+      overflow-x: hidden;
+      cursor: default;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    /* ── TICKER TAPE ── */
+    .ticker-wrap {
+      overflow: hidden;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 9px 0;
+      position: relative;
+      z-index: 50;
+    }
+    .ticker-track {
+      display: flex;
+      width: max-content;
+      animation: ticker 45s linear infinite;
+      gap: 0;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    .ticker-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 28px;
+      border-right: 1px solid var(--border2);
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .ticker-item .sym { color: var(--text); letter-spacing: 0.08em; font-weight: 700; }
+    .ticker-item .price { color: var(--text-mid); }
+    .ticker-item .chg.pos { color: var(--green); }
+    .ticker-item .chg.neg { color: var(--red); }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ── NAVIGATION ── */
+    nav {
+      position: sticky; top: 0;
+      background: rgba(8,12,16,0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border2);
+      z-index: 100;
+      padding: 0 clamp(20px, 5vw, 80px);
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo .pulse-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 6px var(--green); opacity: 1; }
+      50% { box-shadow: 0 0 20px var(--green), 0 0 40px var(--green-glow); opacity: 0.7; }
+    }
+    .nav-links {
+      display: flex; gap: 36px; list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-cta {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--green);
+      border: none;
+      padding: 9px 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 700;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+    }
+    .nav-cta:hover { background: #00ff88; box-shadow: 0 0 24px var(--green-glow); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      position: relative;
+      overflow: hidden;
+      padding: clamp(60px, 10vh, 120px) clamp(20px, 5vw, 80px) 60px;
+    }
+
+    /* grid lines background */
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,120,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,120,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, black 40%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 800px; height: 800px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,232,122,0.07) 0%, transparent 70%);
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--green);
+      border: 1px solid var(--border);
+      padding: 7px 18px;
+      background: rgba(0,232,122,0.04);
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s ease forwards;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-glow 2s infinite;
+    }
+
+    .hero-title {
+      font-family: var(--display);
+      font-size: clamp(42px, 7vw, 88px);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      opacity: 0;
+      animation: fadeUp 0.7s 0.4s ease forwards;
+    }
+    .hero-title .accent { color: var(--green); }
+    .hero-title .dim { color: var(--text-mid); }
+
+    .hero-subtitle {
+      font-family: var(--body);
+      font-size: clamp(15px, 2vw, 20px);
+      font-weight: 300;
+      color: var(--text-mid);
+      max-width: 560px;
+      line-height: 1.7;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.6s ease forwards;
+    }
+
+    .hero-actions {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.8s ease forwards;
+    }
+
+    .btn-primary {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--green);
+      border: none;
+      padding: 16px 36px;
+      cursor: pointer;
+      transition: all 0.25s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary:hover {
+      background: #00ff88;
+      box-shadow: 0 0 32px rgba(0,232,122,0.4), 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      background: transparent;
+      border: 1px solid var(--border2);
+      padding: 16px 36px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-secondary:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-glow);
+    }
+
+    /* ── HERO TERMINAL CARD ── */
+    .hero-terminal {
+      position: relative; z-index: 2;
+      max-width: 700px;
+      margin: 0 auto;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s ease forwards;
+    }
+
+    .terminal-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 60px rgba(0,232,122,0.05);
+    }
+
+    .terminal-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border2);
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .t-dot.r { background: #ff5f56; }
+    .t-dot.y { background: #ffbd2e; }
+    .t-dot.g { background: #27c93f; }
+    .terminal-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-left: auto;
+      letter-spacing: 0.1em;
+    }
+
+    .terminal-body {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .t-stat {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      padding: 14px;
+    }
+    .t-stat .label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .t-stat .value {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .t-stat .value.neg { color: var(--red); }
+    .t-stat .value.amb { color: var(--amber); }
+    .t-stat .sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .t-alert-block {
+      grid-column: span 2;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .t-alert-row {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+    .t-alert-row .badge {
+      padding: 2px 7px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .badge.high { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+    .badge.med  { background: rgba(255,184,77,0.12); color: var(--amber); border: 1px solid rgba(255,184,77,0.3); }
+    .badge.low  { background: rgba(61,155,255,0.12); color: var(--blue); border: 1px solid rgba(61,155,255,0.3); }
+    .t-alert-row .ticker-tag {
+      color: var(--green);
+      font-weight: 700;
+    }
+    .t-alert-row .msg { color: var(--text-mid); }
+    .t-alert-row .time { color: var(--text-dim); margin-left: auto; }
+
+    .t-chart-mini {
+      grid-column: span 2;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      padding: 14px 16px;
+    }
+    .t-chart-mini .chart-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .chart-head .ticker-big {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .chart-head .ticker-price {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--green);
+    }
+
+    /* sparkline SVG embedded */
+    .spark-svg { width: 100%; height: 60px; display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION COMMON ── */
+    section {
+      padding: clamp(60px, 8vw, 120px) clamp(20px, 5vw, 80px);
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 30px; height: 1px;
+      background: var(--green);
+    }
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      line-height: 1.12;
+      margin-bottom: 20px;
+    }
+    .section-title .accent { color: var(--green); }
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-mid);
+      max-width: 500px;
+      line-height: 1.7;
+    }
+
+    /* ── PROBLEM ── */
+    .problem-section {
+      background: var(--bg2);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+    }
+    .problem-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .problem-inner { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    .problem-cards {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .problem-card {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-left: 3px solid transparent;
+      padding: 20px 24px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .problem-card:nth-child(1) { border-left-color: var(--red); }
+    .problem-card:nth-child(2) { border-left-color: var(--amber); }
+    .problem-card:nth-child(3) { border-left-color: var(--blue); }
+    .problem-card:hover { transform: translateX(6px); }
+
+    .problem-card .p-icon {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .problem-card h3 {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .problem-card p {
+      font-size: 13px;
+      color: var(--text-mid);
+      line-height: 1.65;
+    }
+
+    /* ── FEATURES ── */
+    .features-section { background: var(--bg); }
+    .features-grid {
+      max-width: 1200px; margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2px;
+    }
+
+    .feat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      padding: 36px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .feat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .feat-card:hover { background: var(--bg3); border-color: var(--border); }
+    .feat-card:hover::after { transform: scaleX(1); }
+
+    .feat-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      letter-spacing: 0.1em;
+    }
+    .feat-icon-wrap {
+      width: 48px; height: 48px;
+      background: var(--green-glow);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    .feat-card h3 {
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .feat-card p {
+      font-size: 13px;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+    .feat-tag {
+      display: inline-block;
+      margin-top: 16px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      background: var(--green-glow);
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-section {
+      background: var(--bg2);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+    }
+    .how-inner {
+      max-width: 1100px; margin: 0 auto;
+    }
+    .how-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: start;
+      margin-bottom: 60px;
+    }
+    @media (max-width: 768px) {
+      .how-header { grid-template-columns: 1fr; gap: 30px; }
+    }
+
+    .how-steps {
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .how-step {
+      display: flex; gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border2);
+      position: relative;
+    }
+    .how-step:last-child { border-bottom: none; }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      min-width: 32px;
+      padding-top: 4px;
+    }
+    .step-body h4 {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .step-body p {
+      font-size: 13px;
+      color: var(--text-mid);
+      line-height: 1.7;
+    }
+
+    /* ── COMPARISON TABLE ── */
+    .compare-section { background: var(--bg); }
+    .compare-inner { max-width: 1100px; margin: 60px auto 0; }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+    .compare-table th {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 16px 20px;
+      text-align: left;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text-mid);
+    }
+    .compare-table th.highlight {
+      color: var(--green);
+      background: rgba(0,232,122,0.06);
+      border-color: var(--border);
+    }
+    .compare-table td {
+      padding: 14px 20px;
+      font-size: 13px;
+      border: 1px solid var(--border2);
+      color: var(--text-mid);
+      vertical-align: middle;
+    }
+    .compare-table td.highlight {
+      background: rgba(0,232,122,0.04);
+      border-color: var(--border);
+      color: var(--green);
+      font-weight: 500;
+    }
+    .compare-table tr:hover td { background: var(--bg3); }
+    .compare-table tr:hover td.highlight { background: rgba(0,232,122,0.08); }
+
+    .check { color: var(--green); }
+    .cross { color: var(--text-dim); }
+    .feature-name { color: var(--text); font-weight: 500; }
+
+    /* responsive table */
+    @media (max-width: 768px) {
+      .compare-inner { overflow-x: auto; }
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap-section { background: var(--bg2); border-top: 1px solid var(--border2); }
+    .roadmap-inner { max-width: 1100px; margin: 60px auto 0; }
+    .roadmap-track {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      position: relative;
+    }
+    @media (max-width: 900px) {
+      .roadmap-track { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 500px) {
+      .roadmap-track { grid-template-columns: 1fr; }
+    }
+
+    .roadmap-phase {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .roadmap-phase.active {
+      border-color: var(--border);
+      background: rgba(0,232,122,0.03);
+    }
+    .roadmap-phase.active::before {
+      content: 'CURRENT';
+      position: absolute; top: 12px; right: 12px;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      background: rgba(0,232,122,0.1);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+    }
+
+    .phase-weeks {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      margin-bottom: 14px;
+    }
+    .phase-title {
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      letter-spacing: -0.02em;
+    }
+    .phase-items {
+      list-style: none;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .phase-items li {
+      font-size: 12px;
+      color: var(--text-mid);
+      display: flex; align-items: flex-start; gap: 8px;
+      line-height: 1.5;
+    }
+    .phase-items li::before {
+      content: '→';
+      color: var(--text-dim);
+      flex-shrink: 0;
+      font-family: var(--mono);
+    }
+    .phase-items li.done::before { content: '✓'; color: var(--green); }
+    .phase-milestone {
+      margin-top: 20px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border2);
+      padding-top: 14px;
+      letter-spacing: 0.05em;
+    }
+    .phase-milestone span { color: var(--amber); }
+
+    /* ── PRICING ── */
+    .pricing-section { background: var(--bg); }
+    .pricing-inner {
+      max-width: 1000px; margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+    @media (max-width: 700px) {
+      .pricing-inner { grid-template-columns: 1fr; }
+    }
+
+    .price-card {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      padding: 36px 32px;
+      display: flex; flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .price-card.featured {
+      border-color: var(--border);
+      background: rgba(0,232,122,0.03);
+    }
+    .price-card.featured::before {
+      content: 'POPULAR';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      background: var(--green);
+      color: var(--bg);
+      padding: 4px 16px;
+      font-weight: 700;
+    }
+
+    .price-tier {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .price-amount {
+      font-family: var(--display);
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .price-amount sup {
+      font-size: 22px;
+      vertical-align: top;
+      margin-top: 8px;
+    }
+    .price-period {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 28px;
+      letter-spacing: 0.08em;
+    }
+    .price-features {
+      list-style: none;
+      display: flex; flex-direction: column; gap: 12px;
+      flex: 1;
+      margin-bottom: 32px;
+    }
+    .price-features li {
+      font-size: 13px;
+      color: var(--text-mid);
+      display: flex; align-items: flex-start; gap: 10px;
+      line-height: 1.5;
+    }
+    .price-features li .pi { color: var(--green); font-family: var(--mono); flex-shrink: 0; }
+    .price-features li .pi.no { color: var(--text-dim); }
+
+    .price-btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text-mid);
+      text-decoration: none;
+      display: block;
+    }
+    .price-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-glow);
+    }
+    .price-btn.primary-btn {
+      background: var(--green);
+      color: var(--bg);
+      border-color: var(--green);
+      font-weight: 700;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+    }
+    .price-btn.primary-btn:hover {
+      background: #00ff88;
+      box-shadow: 0 0 24px var(--green-glow);
+    }
+
+    /* ── TEAM ── */
+    .team-section { background: var(--bg2); border-top: 1px solid var(--border2); }
+    .team-grid {
+      max-width: 1100px; margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+    }
+    @media (max-width: 900px) {
+      .team-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .team-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .team-card {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      padding: 28px 20px;
+      text-align: center;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .team-card:hover {
+      border-color: var(--border);
+      transform: translateY(-4px);
+    }
+    .team-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+      margin: 0 auto 16px;
+    }
+    .team-name {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .team-role {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    .team-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--bg3);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+      padding: 40px clamp(20px, 5vw, 80px);
+    }
+    .stats-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      divide-x: var(--border2);
+      gap: 1px;
+    }
+    @media (max-width: 700px) {
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+    }
+
+    .stat-item {
+      padding: 20px 30px;
+      border-left: 1px solid var(--border2);
+    }
+    .stat-item:first-child { border-left: none; }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border2);
+      padding: 60px clamp(20px, 5vw, 80px) 40px;
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px;
+    }
+    @media (max-width: 768px) {
+      .footer-inner { grid-template-columns: 1fr 1fr; gap: 40px; }
+    }
+    @media (max-width: 480px) {
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+
+    .footer-brand p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-top: 14px;
+      max-width: 280px;
+    }
+
+    .footer-col h4 {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-col ul li a:hover { color: var(--green); }
+
+    .footer-bottom {
+      max-width: 1100px; margin: 40px auto 0;
+      border-top: 1px solid var(--border2);
+      padding-top: 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+    .footer-bottom p a { color: var(--green); text-decoration: none; }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      background: var(--bg);
+      text-align: center;
+      padding: clamp(80px, 10vw, 140px) clamp(20px, 5vw, 80px);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,232,122,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+    .cta-section .section-title { margin: 0 auto 16px; }
+    .cta-section .section-desc { margin: 0 auto 36px; max-width: 440px; }
+
+    /* counter animation */
+    @keyframes countUp {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     TICKER TAPE
+════════════════════════════════════════ -->
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker-track">
+    <!-- first set -->
+    <div class="ticker-item"><span class="sym">AAPL</span><span class="price">$196.42</span><span class="chg pos">▲ +1.23%</span></div>
+    <div class="ticker-item"><span class="sym">TSLA</span><span class="price">$271.11</span><span class="chg neg">▼ −2.04%</span></div>
+    <div class="ticker-item"><span class="sym">NVDA</span><span class="price">$878.36</span><span class="chg pos">▲ +3.17%</span></div>
+    <div class="ticker-item"><span class="sym">MSFT</span><span class="price">$415.55</span><span class="chg pos">▲ +0.78%</span></div>
+    <div class="ticker-item"><span class="sym">AMZN</span><span class="price">$183.20</span><span class="chg pos">▲ +1.45%</span></div>
+    <div class="ticker-item"><span class="sym">GOOGL</span><span class="price">$170.88</span><span class="chg neg">▼ −0.55%</span></div>
+    <div class="ticker-item"><span class="sym">META</span><span class="price">$501.90</span><span class="chg pos">▲ +2.33%</span></div>
+    <div class="ticker-item"><span class="sym">AMD</span><span class="price">$162.74</span><span class="chg neg">▼ −1.12%</span></div>
+    <div class="ticker-item"><span class="sym">NFLX</span><span class="price">$642.00</span><span class="chg pos">▲ +0.91%</span></div>
+    <div class="ticker-item"><span class="sym">SPY</span><span class="price">$527.83</span><span class="chg pos">▲ +0.44%</span></div>
+    <div class="ticker-item"><span class="sym">BRK.B</span><span class="price">$432.10</span><span class="chg pos">▲ +0.19%</span></div>
+    <div class="ticker-item"><span class="sym">JPM</span><span class="price">$204.55</span><span class="chg neg">▼ −0.33%</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="sym">AAPL</span><span class="price">$196.42</span><span class="chg pos">▲ +1.23%</span></div>
+    <div class="ticker-item"><span class="sym">TSLA</span><span class="price">$271.11</span><span class="chg neg">▼ −2.04%</span></div>
+    <div class="ticker-item"><span class="sym">NVDA</span><span class="price">$878.36</span><span class="chg pos">▲ +3.17%</span></div>
+    <div class="ticker-item"><span class="sym">MSFT</span><span class="price">$415.55</span><span class="chg pos">▲ +0.78%</span></div>
+    <div class="ticker-item"><span class="sym">AMZN</span><span class="price">$183.20</span><span class="chg pos">▲ +1.45%</span></div>
+    <div class="ticker-item"><span class="sym">GOOGL</span><span class="price">$170.88</span><span class="chg neg">▼ −0.55%</span></div>
+    <div class="ticker-item"><span class="sym">META</span><span class="price">$501.90</span><span class="chg pos">▲ +2.33%</span></div>
+    <div class="ticker-item"><span class="sym">AMD</span><span class="price">$162.74</span><span class="chg neg">▼ −1.12%</span></div>
+    <div class="ticker-item"><span class="sym">NFLX</span><span class="price">$642.00</span><span class="chg pos">▲ +0.91%</span></div>
+    <div class="ticker-item"><span class="sym">SPY</span><span class="price">$527.83</span><span class="chg pos">▲ +0.44%</span></div>
+    <div class="ticker-item"><span class="sym">BRK.B</span><span class="price">$432.10</span><span class="chg pos">▲ +0.19%</span></div>
+    <div class="ticker-item"><span class="sym">JPM</span><span class="price">$204.55</span><span class="chg neg">▼ −0.33%</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════ -->
+<nav>
+  <a href="#" class="nav-logo">
+    <span class="pulse-dot"></span>
+    StockPulse
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <button class="nav-cta">Early Access</button>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     HERO
+════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">Retail Intelligence Platform · Beta 2026</div>
+
+    <h1 class="hero-title">
+      The Market Moves.<br/>
+      <span class="dim">Now You'll Know</span> <span class="accent">Why.</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      StockPulse transforms raw market alerts into actionable historical intelligence.
+      Stop reacting. Start deciding with institutional-grade context — built for retail investors.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#pricing" class="btn-primary">Get Early Access</a>
+      <a href="#features" class="btn-secondary">Explore Features</a>
+    </div>
+  </div>
+
+  <div class="hero-terminal">
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <div class="t-dot r"></div>
+        <div class="t-dot y"></div>
+        <div class="t-dot g"></div>
+        <div class="terminal-title">STOCKPULSE · LIVE DASHBOARD · MOCK MODE</div>
+      </div>
+      <div class="terminal-body">
+        <div class="t-stat">
+          <div class="label">Portfolio Score</div>
+          <div class="value">+4.2%</div>
+          <div class="sub">30-day avg after event</div>
+        </div>
+        <div class="t-stat">
+          <div class="label">Risk Score</div>
+          <div class="value amb">58/100</div>
+          <div class="sub">Balanced Growth</div>
+        </div>
+        <div class="t-stat">
+          <div class="label">Active Alerts</div>
+          <div class="value">7 <span style="font-size:14px;color:#ff4757">●</span></div>
+          <div class="sub">HIGH severity</div>
+        </div>
+        <div class="t-stat">
+          <div class="label">Confidence</div>
+          <div class="value" style="font-size:18px">MEDIUM</div>
+          <div class="sub">Based on 3 precedents</div>
+        </div>
+
+        <div class="t-alert-block">
+          <div class="t-alert-row">
+            <span class="badge high">HIGH</span>
+            <span class="ticker-tag">TSLA</span>
+            <span class="msg">COO Appointment Announced</span>
+            <span class="time">09:32</span>
+          </div>
+          <div class="t-alert-row">
+            <span class="badge med">MED</span>
+            <span class="ticker-tag">NVDA</span>
+            <span class="msg">Earnings Beat — EPS +12%</span>
+            <span class="time">11:15</span>
+          </div>
+          <div class="t-alert-row">
+            <span class="badge low">LOW</span>
+            <span class="ticker-tag">AAPL</span>
+            <span class="msg">Analyst Re-Rating: Outperform</span>
+            <span class="time">13:44</span>
+          </div>
+        </div>
+
+        <div class="t-chart-mini">
+          <div class="chart-head">
+            <span class="ticker-big">NVDA · 90D</span>
+            <span class="ticker-price">$878.36 ▲ +3.17%</span>
+          </div>
+          <svg class="spark-svg" viewBox="0 0 640 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00e87a" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#00e87a" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,50 L20,46 L40,44 L60,48 L80,42 L100,38 L120,36 L140,40 L160,35 L180,30 L200,34 L220,28 L240,22 L260,26 L280,20 L300,24 L320,16 L340,14 L360,18 L380,10 L400,14 L420,8 L440,12 L460,6 L480,10 L500,4 L520,8 L540,4 L560,6 L580,2 L620,4 L640,2" fill="url(#sg)" stroke="none"/>
+            <path d="M0,50 L20,46 L40,44 L60,48 L80,42 L100,38 L120,36 L140,40 L160,35 L180,30 L200,34 L220,28 L240,22 L260,26 L280,20 L300,24 L320,16 L340,14 L360,18 L380,10 L400,14 L420,8 L440,12 L460,6 L480,10 L500,4 L520,8 L540,4 L560,6 L580,2 L620,4 L640,2" fill="none" stroke="#00e87a" stroke-width="1.5"/>
+            <!-- event markers -->
+            <circle cx="180" cy="30" r="3" fill="#ffb84d"/>
+            <circle cx="320" cy="16" r="3" fill="#ff4757"/>
+            <circle cx="500" cy="4"  r="3" fill="#00e87a"/>
+          </svg>
+          <div style="display:flex;gap:16px;margin-top:8px;">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--amber);">● CEO Change</span>
+            <span style="font-family:var(--mono);font-size:9px;color:var(--red);">● Earnings Miss</span>
+            <span style="font-family:var(--mono);font-size:9px;color:var(--green);">● Split Announced</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     STATS BAR
+════════════════════════════════════════ -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item reveal">
+      <div class="stat-value" data-target="15">0</div>
+      <div class="stat-label">Years of Market Data</div>
+    </div>
+    <div class="stat-item reveal">
+      <div class="stat-value" data-target="112">0</div>
+      <div class="stat-label">Event Types Tracked</div>
+    </div>
+    <div class="stat-item reveal">
+      <div class="stat-value" data-target="25">0</div>
+      <div class="stat-label">Tickers in MVP</div>
+    </div>
+    <div class="stat-item reveal">
+      <div class="stat-value">~5.3<span style="font-size:16px">mo</span></div>
+      <div class="stat-label">Projected Payback Period</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PROBLEM
+════════════════════════════════════════ -->
+<section class="problem-section" id="problem">
+  <div class="problem-inner">
+    <div class="reveal">
+      <div class="section-label">The Problem</div>
+      <h2 class="section-title">Data without <span class="accent">context</span> is just noise.</h2>
+      <p class="section-desc">
+        Retail investors have more data than ever — yet remain at a severe informational disadvantage to institutional traders. The issue isn't access. It's interpretation.
+      </p>
+    </div>
+    <div class="problem-cards reveal">
+      <div class="problem-card">
+        <div class="p-icon">📡</div>
+        <h3>Information Overlap</h3>
+        <p>Continuous streams of notifications, social media speculation, and clickbait news create cognitive overload — causing emotional, impulsive decisions.</p>
+      </div>
+      <div class="problem-card">
+        <div class="p-icon">📉</div>
+        <h3>Context Deficit</h3>
+        <p>When a CEO resigns or an SEC 10-K drops, investors receive the alert but lack the tools to understand its historical significance for that specific stock.</p>
+      </div>
+      <div class="problem-card">
+        <div class="p-icon">🏛️</div>
+        <h3>Accessibility Gap</h3>
+        <p>Institutional event-correlation tools providing this context cost $20,000–$30,000/year. Retail investors are left to perform hours of error-prone manual research.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     FEATURES
+════════════════════════════════════════ -->
+<section class="features-section" id="features">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="reveal">
+      <div class="section-label">Core Features</div>
+      <h2 class="section-title">From raw alert to<br/><span class="accent">statistical conclusion.</span></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-num">01</div>
+        <div class="feat-icon-wrap">🔍</div>
+        <h3>Smart Watchlist & Alerts</h3>
+        <p>High-signal filtering engine that bypasses generic market commentary. Real-time alerts only for events with significant impact potential — earnings surprises, SEC filings, analyst re-ratings — scoped to your specific portfolio.</p>
+        <span class="feat-tag">Agent 1 · Event Scanner</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">02</div>
+        <div class="feat-icon-wrap">📊</div>
+        <h3>Historical Event Mapping</h3>
+        <p>Our core differentiator. When a CEO transition occurs, StockPulse instantly generates: <em style="color:var(--green-dim)">"Company X has had 3 CEO changes in 15 years; the stock recovered its 5% initial loss within 12 trading days."</em> Statistical decisions, not gut reactions.</p>
+        <span class="feat-tag">Agent 2 · Historical Analyst · Core IP</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">03</div>
+        <div class="feat-icon-wrap">📈</div>
+        <h3>Visual Impact Analysis</h3>
+        <p>Past news events overlaid directly onto interactive price charts. Visually study how quickly a stock "digests" specific types of news — building long-term trading intuition without the institutional terminal price tag.</p>
+        <span class="feat-tag">On-Chart News Overlay</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">04</div>
+        <div class="feat-icon-wrap">🤖</div>
+        <h3>Personalized AI Advisor</h3>
+        <p>Input your age, salary, and savings. The AI calculates a quantitative Risk Score (0–100) and generates a custom Portfolio Allocation strategy — transforming market intelligence into personal financial guidance.</p>
+        <span class="feat-tag">Agent 3 · Investment Advisor</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">05</div>
+        <div class="feat-icon-wrap">🌡️</div>
+        <h3>Portfolio Heatmap</h3>
+        <p>Instant visual risk assessment across your watchlist. Volatility, recent event density, and 7-day price change synthesized into a color-coded grid — green to red. Click any cell to deep-dive the chart.</p>
+        <span class="feat-tag">Risk Visualization</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">06</div>
+        <div class="feat-icon-wrap">💬</div>
+        <h3>Contextual AI Chat</h3>
+        <p>Ask natural language questions about any ticker in your watchlist. The AI loads full context — prices, events, news, sentiment — before answering. Conversation memory means you can drill deeper without re-explaining.</p>
+        <span class="feat-tag">gpt-5.2 · Conversation Memory</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">07</div>
+        <div class="feat-icon-wrap">🔬</div>
+        <h3>What-If Simulator</h3>
+        <p>"What if I had invested $5,000 in NVDA 30 days ago?" Instantly back-calculate shares purchased, current value, P&L, and return percentage. Real historical data, no guesswork.</p>
+        <span class="feat-tag">Backtesting · No-Code</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-num">08</div>
+        <div class="feat-icon-wrap">📅</div>
+        <h3>Event Calendar & Digest</h3>
+        <p>All market-moving events mapped onto a calendar view with color-coded severity badges. The Morning Digest feature generates a clean, copy-paste-friendly briefing across your entire watchlist — ready before market open.</p>
+        <span class="feat-tag">Calendar · Morning Briefing</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════ -->
+<section class="how-section" id="how">
+  <div class="how-inner">
+    <div class="how-header">
+      <div class="reveal">
+        <div class="section-label">How It Works</div>
+        <h2 class="section-title">Three AI agents.<br/><span class="accent">One conclusion.</span></h2>
+        <p class="section-desc" style="margin-top:16px;">A chained pipeline transforms a market event into a personalized, statistically-grounded recommendation in seconds.</p>
+      </div>
+      <div class="reveal" style="display:flex;flex-direction:column;gap:12px;padding-top:40px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:16px 20px;font-family:var(--mono);font-size:11px;">
+          <span style="color:var(--text-dim)">$ </span><span style="color:var(--green)">python main.py --mode real</span>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border2);padding:16px 20px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:8px;">PIPELINE OUTPUT</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-mid);line-height:1.8;">
+            Agent 1 → <span style="color:var(--amber)">TSLA / CEO_CHANGE / HIGH</span><br/>
+            Agent 2 → <span style="color:var(--blue)">3 precedents found</span><br/>
+            Agent 2 → <span style="color:var(--green)">Avg 30d: −0.8% (MEDIUM conf.)</span><br/>
+            Agent 3 → <span style="color:var(--green)">Rebalance: −2% TSLA suggested</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="how-steps reveal">
+      <div class="how-step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h4>Build Your Watchlist</h4>
+          <p>Add any of 25+ tracked tickers to your personalized watchlist. Sentiment indicators appear instantly, and the dashboard adapts to show only what matters to your capital.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h4>Agent 1 Scans & Classifies</h4>
+          <p>The Event Scanner filters 112+ event types and 35+ news sources against your watchlist — delivering HIGH / MEDIUM / LOW severity alerts with a notification badge and optional audio ping.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h4>Agent 2 Maps History</h4>
+          <p>Click any alert. The Historical Analyst instantly correlates the event type against 90 days of price data, calculates average 1-day, 7-day, and 30-day post-event returns, and generates a narrative with confidence level.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <h4>Agent 3 Personalizes the Advice</h4>
+          <p>Your Risk Score — calculated from salary, savings, and age — filters the historical insight into a personal portfolio allocation recommendation. The same event means different things for a 28-year-old engineer vs. a 55-year-old executive.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">05</div>
+        <div class="step-body">
+          <h4>Decide. Execute. Export.</h4>
+          <p>Export a clean institutional-style PDF report of any analysis panel. Execute trades on your preferred brokerage. Brokerage API integration — Robinhood, eToro — is on the 2026 roadmap.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     COMPARISON TABLE
+════════════════════════════════════════ -->
+<section class="compare-section" id="compare">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal">
+      <div class="section-label">Competitive Landscape</div>
+      <h2 class="section-title">The only platform that<br/><span class="accent">adds context.</span></h2>
+    </div>
+    <div class="compare-inner reveal" style="overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Yahoo Finance</th>
+            <th>Benzinga Pro</th>
+            <th>TradingView</th>
+            <th class="highlight">StockPulse</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="feature-name">Real-time News Alerts</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td class="highlight"><span class="check">✓</span></td></tr>
+          <tr><td class="feature-name">Personalized Watchlists</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td class="highlight"><span class="check">✓</span></td></tr>
+          <tr><td class="feature-name">Noise Filtering Engine</td><td><span class="cross">—</span></td><td><span class="check">✓</span></td><td><span class="cross">—</span></td><td class="highlight"><span class="check">✓</span></td></tr>
+          <tr><td class="feature-name">On-Chart News Overlays</td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td><span class="check">✓</span></td><td class="highlight"><span class="check">✓</span></td></tr>
+          <tr><td class="feature-name">Historical Event Mapping</td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td class="highlight"><span class="check">✓ Exclusive</span></td></tr>
+          <tr><td class="feature-name">Automated Impact Probability</td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td class="highlight"><span class="check">✓ Exclusive</span></td></tr>
+          <tr><td class="feature-name">Personalized AI Advisor</td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td><span class="cross">—</span></td><td class="highlight"><span class="check">✓ Exclusive</span></td></tr>
+          <tr><td class="feature-name">Annual Cost</td><td>Free</td><td>~$1,200/yr</td><td>~$600/yr</td><td class="highlight">from $240/yr</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     ROADMAP
+════════════════════════════════════════ -->
+<section class="roadmap-section" id="roadmap">
+  <div class="roadmap-inner">
+    <div class="reveal">
+      <div class="section-label">Development Roadmap</div>
+      <h2 class="section-title">16 weeks to <span class="accent">public beta.</span></h2>
+      <p class="section-desc" style="margin-top:12px;">A structured sprint cycle ensuring the core Contextualization Engine ships first, every time.</p>
+    </div>
+    <div class="roadmap-track" style="margin-top:48px;">
+      <div class="roadmap-phase reveal">
+        <div class="phase-weeks">Weeks 01–04</div>
+        <div class="phase-title">Research & Architecture</div>
+        <ul class="phase-items">
+          <li class="done">Competitor & market analysis</li>
+          <li class="done">System architecture design</li>
+          <li class="done">API integrations scoped</li>
+          <li class="done">FastAPI + mock data layer built</li>
+          <li class="done">Core agent pipeline designed</li>
+        </ul>
+        <div class="phase-milestone">Milestone: <span>Tech architecture sign-off</span></div>
+      </div>
+      <div class="roadmap-phase active reveal">
+        <div class="phase-weeks">Weeks 05–10</div>
+        <div class="phase-title">MVP Development</div>
+        <ul class="phase-items">
+          <li class="done">Agent 1 Event Scanner live</li>
+          <li class="done">Agent 2 Historical Analyst live</li>
+          <li class="done">Agent 3 Investment Advisor live</li>
+          <li>React.js frontend migration</li>
+          <li>Real-time API integration</li>
+        </ul>
+        <div class="phase-milestone">Milestone: <span>Feature-complete alpha</span></div>
+      </div>
+      <div class="roadmap-phase reveal">
+        <div class="phase-weeks">Weeks 11–14</div>
+        <div class="phase-title">Testing & Validation</div>
+        <ul class="phase-items">
+          <li>Cloud deployment (AWS/GCP)</li>
+          <li>Historical mapping accuracy audit</li>
+          <li>Beta user onboarding</li>
+          <li>Performance & latency tuning</li>
+          <li>Legal ToS & disclaimers finalized</li>
+        </ul>
+        <div class="phase-milestone">Milestone: <span>Event mapping accuracy validated</span></div>
+      </div>
+      <div class="roadmap-phase reveal">
+        <div class="phase-weeks">Weeks 15–16 & Beyond</div>
+        <div class="phase-title">Launch & Scale</div>
+        <ul class="phase-items">
+          <li>Public beta release</li>
+          <li>Kubernetes autoscaling live</li>
+          <li>Brokerage API partnerships</li>
+          <li>LangGraph orchestration</li>
+          <li>SEC EDGAR real-time feed</li>
+        </ul>
+        <div class="phase-milestone">Milestone: <span>Public beta + user acquisition</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     PRICING
+════════════════════════════════════════ -->
+<section class="pricing-section" id="pricing">
+  <div style="max-width:1000px;margin:0 auto;">
+    <div class="reveal" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">
+        <span style="width:30px;height:1px;background:var(--green);display:block;"></span>
+        Pricing
+      </div>
+      <h2 class="section-title">Start free. Scale with <span class="accent">conviction.</span></h2>
+      <p class="section-desc" style="margin:0 auto;">A freemium entry point that converts when users experience the 'aha moment' — the first historical context that changes their decision.</p>
+    </div>
+    <div class="pricing-inner reveal">
+      <div class="price-card">
+        <div class="price-tier">Free</div>
+        <div class="price-amount">$0</div>
+        <div class="price-period">forever · no card required</div>
+        <ul class="price-features">
+          <li><span class="pi">✓</span>Basic price charts</li>
+          <li><span class="pi">✓</span>Up to 5 watchlist tickers</li>
+          <li><span class="pi">✓</span>Standard news alerts</li>
+          <li><span class="pi">✓</span>Portfolio heatmap (limited)</li>
+          <li><span class="pi no">—</span><span style="color:var(--text-dim)">Historical Event Mapping</span></li>
+          <li><span class="pi no">—</span><span style="color:var(--text-dim)">AI Advisor</span></li>
+          <li><span class="pi no">—</span><span style="color:var(--text-dim)">What-If Simulator</span></li>
+        </ul>
+        <a href="#" class="price-btn">Get Started Free</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tier">Pro</div>
+        <div class="price-amount"><sup>$</sup>19<span style="font-size:24px">.99</span></div>
+        <div class="price-period">per month · billed monthly</div>
+        <ul class="price-features">
+          <li><span class="pi">✓</span>Everything in Free</li>
+          <li><span class="pi">✓</span>Historical Event Mapping</li>
+          <li><span class="pi">✓</span>50 tracked assets</li>
+          <li><span class="pi">✓</span>Visual Impact Analysis</li>
+          <li><span class="pi">✓</span>What-If & Compare tools</li>
+          <li><span class="pi">✓</span>Morning Digest & Calendar</li>
+          <li><span class="pi no">—</span><span style="color:var(--text-dim)">Institutional sentiment feed</span></li>
+        </ul>
+        <a href="#" class="price-btn primary-btn">Start Pro Trial</a>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Elite</div>
+        <div class="price-amount"><sup>$</sup>49<span style="font-size:24px">.99</span></div>
+        <div class="price-period">per month · billed monthly</div>
+        <ul class="price-features">
+          <li><span class="pi">✓</span>Everything in Pro</li>
+          <li><span class="pi">✓</span>Real-time institutional sentiment</li>
+          <li><span class="pi">✓</span>Unlimited chart overlays</li>
+          <li><span class="pi">✓</span>Personalized AI Advisor</li>
+          <li><span class="pi">✓</span>Full AI Chat (conversation memory)</li>
+          <li><span class="pi">✓</span>PDF export reports</li>
+          <li><span class="pi">✓</span>Priority feature access</li>
+        </ul>
+        <a href="#" class="price-btn">Go Elite</a>
+      </div>
+    </div>
+    <p class="reveal" style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:28px;letter-spacing:0.08em;">
+      StockPulse is a decision-support tool, not financial advice. Always consult a licensed financial advisor.
+    </p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     CTA
+════════════════════════════════════════ -->
+<section class="cta-section">
+  <div class="cta-inner reveal">
+    <div class="section-label" style="justify-content:center;">
+      <span style="width:30px;height:1px;background:var(--green);display:block;"></span>
+      Get Started
+    </div>
+    <h2 class="section-title">The market won't wait.<br/><span class="accent">Neither should you.</span></h2>
+    <p class="section-desc">Join the waitlist for StockPulse public beta. Free tier forever — upgrade when you're ready to trade with conviction.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:36px;">
+      <a href="#pricing" class="btn-primary">Request Early Access</a>
+    </div>
+    <p style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:24px;letter-spacing:0.08em;">No credit card. No commitment. Just context.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo" style="font-size:18px;">
+        <span class="pulse-dot"></span>
+        StockPulse
+      </a>
+      <p>Contextualizing the Market. Empowering the Investor. Institutional-grade historical event intelligence — built for the retail generation.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Disclaimers</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 StockPulse · Decision-support tool · Not financial advice</p>
+    <p>Built with FastAPI · Python · Azure OpenAI · <a href="https://anthropic.com">Claude</a></p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        // stagger siblings
+        const siblings = [...e.target.parentElement.querySelectorAll('.reveal')];
+        const idx = siblings.indexOf(e.target);
+        e.target.style.transitionDelay = (idx * 80) + 'ms';
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+
+  // Counter animation
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.target);
+    const duration = 1400;
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target) + (el.dataset.suffix || '');
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.target.dataset.target) {
+        animateCounter(e.target);
+        counterObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+  // Nav scroll highlight
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) cur = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + cur ? 'var(--green)' : '';
+    });
+  });
+</script>
+
+</body>
+</html>
